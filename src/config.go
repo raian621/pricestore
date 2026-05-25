@@ -1,0 +1,58 @@
+package main
+
+import (
+	"log"
+	"os"
+	"strconv"
+)
+
+type Config struct {
+	BootstrapDb     bool
+	DbHost          string
+	DbPort          uint
+	DbName          string
+	DbUser          string
+	DbPassword      string
+	DbMigrationPath string
+}
+
+func LoadConfigFromEnv(config *Config) error {
+	config.BootstrapDb = envBool("BOOTSTRAP_DB", false)
+	config.DbHost = envString("DB_HOST", "localhost")
+	config.DbPort = envUint("DB_PORT", 5432)
+	config.DbName = envString("DB_NAME", "postgres")
+	config.DbUser = envString("DB_USER", "postgres")
+	config.DbPassword = envString("DB_PASSWORD", "postgres")
+	config.DbMigrationPath = envString("DB_MIGRATION_PATH", "./scripts/migrations/")
+
+	return nil
+}
+
+func envBool(key string, defaultVal bool) bool {
+	if val, ok := os.LookupEnv(key); ok {
+		if b, err := strconv.ParseBool(val); err != nil {
+			log.Fatalln(err)
+		} else {
+			return b
+		}
+	}
+	return defaultVal
+}
+
+func envUint(key string, defaultVal uint) uint {
+	if val, ok := os.LookupEnv(key); ok {
+		if i, err := strconv.ParseUint(val, 10, 16); err != nil {
+			log.Fatalln(err)
+		} else {
+			return uint(i)
+		}
+	}
+	return defaultVal
+}
+
+func envString(key string, defaultVal string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return defaultVal
+}
