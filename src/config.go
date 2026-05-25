@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,6 +19,8 @@ type Config struct {
 }
 
 func LoadConfigFromEnv(config *Config) error {
+	godotenv.Load()
+
 	config.BootstrapDb = envBool("BOOTSTRAP_DB", false)
 	config.DbHost = envString("DB_HOST", "localhost")
 	config.DbPort = envUint("DB_PORT", 5432)
