@@ -19,7 +19,6 @@ func (m Migration) Apply(p *pgxpool.Pool) error {
 	row := p.QueryRow(context.Background(),
 		"SELECT COUNT(*) > 0 FROM migrations WHERE migration_name = $1", m.Name)
 	var migrationApplied bool
-	log.Println(migrationApplied, m, m.Name)
 	if err := row.Scan(&migrationApplied); err != nil {
 		return err
 	}
@@ -66,8 +65,6 @@ func ApplyMigrations(p *pgxpool.Pool, baseDir string, bootstrap bool) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Found %d migrations", len(migrations))
-	log.Println(migrations)
 	for _, migration := range migrations {
 		if err := migration.Apply(p); err != nil {
 			return err

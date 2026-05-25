@@ -13,7 +13,6 @@ func main() {
 	if err := LoadConfigFromEnv(&config); err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(config)
 
 	pool, err := pgxpool.New(context.Background(), db.CreateDbConnString(config.DbUser, config.DbPassword, config.DbHost, config.DbPort, config.DbName))
 	if err != nil {
