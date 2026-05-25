@@ -27,8 +27,19 @@ func (m Migration) Apply(p *pgxpool.Pool) error {
 		return nil
 	}
 	log.Printf("Executing migration %s", m.Name)
-	_, err := p.Exec(context.Background(), m.Script)
-	return err
+	tx, err := p.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(context.Background(), m.Script); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(context.Background(),
+		"INSERT INTO migrations (migration_name) VALUES ($1)", m.Name); err != nil {
+		return err
+	}
+
+	return tx.Commit(context.Background())
 }
 
 func ReadMigrations(baseDir string) ([]Migration, error) {
