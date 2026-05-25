@@ -13,7 +13,8 @@ import (
 
 func testPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	connStr := CreateDbConnString("postgres", "postgres", "localhost", 5432, "postgres")
+	connStr := CreateDbConnString("postgres", "postgres", "localhost", 5432,
+		"postgres")
 	pool, err := pgxpool.New(context.Background(), connStr)
 	require.NoError(t, err, "failed to connect to test db")
 	t.Cleanup(pool.Close)
@@ -67,7 +68,8 @@ func TestBootstrapMigrationTable(t *testing.T) {
 
 	var exists bool
 	err := p.QueryRow(context.Background(),
-		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'migrations')",
+		`SELECT EXISTS (SELECT FROM information_schema.tables
+		WHERE table_name = 'migrations')`,
 	).Scan(&exists)
 	require.NoError(t, err)
 	assert.True(t, exists, "migrations table was not created")
@@ -119,10 +121,12 @@ func TestApplyMigration_SkipsExisting(t *testing.T) {
 
 	var exists bool
 	err := p.QueryRow(context.Background(),
-		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'test_migration_skip')",
+		`SELECT EXISTS (SELECT FROM information_schema.tables
+		WHERE table_name = 'test_migration_skip')`,
 	).Scan(&exists)
 	require.NoError(t, err)
-	assert.False(t, exists, "table was created even though migration was already applied")
+	assert.False(t, exists,
+		"table was created even though migration was already applied")
 }
 
 func TestApplyMigrations(t *testing.T) {

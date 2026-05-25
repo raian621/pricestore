@@ -2,22 +2,22 @@ package db
 
 import (
 	"context"
+	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	shared_models "github.com/raian621/pricestore/src/shared/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	shared_models "github.com/raian621/pricestore/src/shared/models"
 )
 
 var ctx = context.Background()
 
 func migrationsDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "..", "scripts", "migrations")
+	cwd, _ := os.Getwd()
+	return filepath.Join(cwd, "..", "..", "scripts", "migrations")
 }
 
 func setupFromMigrations(t *testing.T, p *pgxpool.Pool) {
@@ -60,8 +60,10 @@ func TestInsertCandlesticks(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	candlesticks := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
-		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0, High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0,
+			High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
 	}
 
 	require.NoError(t, InsertCandlesticks(p, assetName, candlesticks))
@@ -90,7 +92,8 @@ func TestInsertCandlesticks_DuplicateReplacement(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	cs := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
 	}
 
 	require.NoError(t, InsertCandlesticks(p, assetName, cs))
@@ -120,7 +123,8 @@ func TestInsertCandlesticks_NonexistentAsset(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	cs := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
 	}
 
 	assert.Error(t, InsertCandlesticks(p, "nonexistent", cs))
@@ -140,9 +144,12 @@ func TestGetCandlesticks(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	candlesticks := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
-		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0, High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
-		{StartUsec: now + 2*interval, EndUsec: now + 3*interval, Open: 112.0, High: 120.0, Low: 108.0, Close: 118.0, Volume: 2000.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0,
+			High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
+		{StartUsec: now + 2*interval, EndUsec: now + 3*interval, Open: 112.0,
+			High: 120.0, Low: 108.0, Close: 118.0, Volume: 2000.0},
 	}
 
 	require.NoError(t, InsertCandlesticks(p, assetName, candlesticks))
@@ -169,9 +176,12 @@ func TestGetCandlesticks_WithTimeRange(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	candlesticks := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
-		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0, High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
-		{StartUsec: now + 2*interval, EndUsec: now + 3*interval, Open: 112.0, High: 120.0, Low: 108.0, Close: 118.0, Volume: 2000.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0,
+			High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
+		{StartUsec: now + 2*interval, EndUsec: now + 3*interval, Open: 112.0,
+			High: 120.0, Low: 108.0, Close: 118.0, Volume: 2000.0},
 	}
 
 	require.NoError(t, InsertCandlesticks(p, assetName, candlesticks))
@@ -195,8 +205,10 @@ func TestGetCandlesticks_WithLimit(t *testing.T) {
 	now := time.Now().UnixMicro()
 	interval := int64(60_000_000)
 	candlesticks := []shared_models.Candlestick{
-		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0, Low: 95.0, Close: 105.0, Volume: 1000.0},
-		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0, High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
+		{StartUsec: now, EndUsec: now + interval, Open: 100.0, High: 110.0,
+			Low: 95.0, Close: 105.0, Volume: 1000.0},
+		{StartUsec: now + interval, EndUsec: now + 2*interval, Open: 105.0,
+			High: 115.0, Low: 102.0, Close: 112.0, Volume: 1500.0},
 	}
 
 	require.NoError(t, InsertCandlesticks(p, assetName, candlesticks))
