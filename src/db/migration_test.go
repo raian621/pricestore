@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	secret "github.com/andrewbenton/go-secrets"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,9 +14,9 @@ import (
 
 func testPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	connStr := CreateDbConnString("postgres", "postgres", "localhost", 5432,
+	connStr := CreateDbConnString("postgres", secret.Make("postgres"), "localhost", 5432,
 		"postgres")
-	pool, err := pgxpool.New(context.Background(), connStr)
+	pool, err := pgxpool.New(context.Background(), connStr.Get())
 	require.NoError(t, err, "failed to connect to test db")
 	t.Cleanup(pool.Close)
 	return pool

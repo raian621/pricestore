@@ -14,11 +14,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	pool, err := pgxpool.New(context.Background(), db.CreateDbConnString(config.DbUser, config.DbPassword, config.DbHost, config.DbPort, config.DbName))
+	pool, err := pgxpool.New(context.Background(), db.CreateDbConnString(
+		config.DbUser, config.DbPassword, config.DbHost, config.DbPort,
+		config.DbName).Get())
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if err := db.ApplyMigrations(pool, config.DbMigrationPath, config.BootstrapDb); err != nil {
+	if err := db.ApplyMigrations(pool, config.DbMigrationPath,
+		config.BootstrapDb); err != nil {
 		log.Fatalln(err)
 	}
 }

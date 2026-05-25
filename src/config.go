@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	secret "github.com/andrewbenton/go-secrets"
 	"github.com/joho/godotenv"
 )
 
@@ -14,10 +15,10 @@ type Config struct {
 	DbPort          uint
 	DbName          string
 	DbUser          string
-	DbPassword      string
+	DbPassword      secret.Secret[string]
 	DbMigrationPath string
-	AlpacaApiKey    string
-	AlpacaSecret    string
+	AlpacaApiKey    secret.Secret[string]
+	AlpacaSecret    secret.Secret[string]
 	AlpacaApiUrl    string
 }
 
@@ -29,11 +30,11 @@ func LoadConfigFromEnv(config *Config) error {
 	config.DbPort = envUint("DB_PORT", 5432)
 	config.DbName = envString("DB_NAME", "postgres")
 	config.DbUser = envString("DB_USER", "postgres")
-	config.DbPassword = envString("DB_PASSWORD", "postgres")
+	config.DbPassword = secret.Make(envString("DB_PASSWORD", "postgres"))
 	config.DbMigrationPath = envString("DB_MIGRATION_PATH",
 		"./scripts/migrations/")
-	config.AlpacaApiKey = envString("ALPACA_API_KEY", "")
-	config.AlpacaSecret = envString("ALPACA_SECRET", "")
+	config.AlpacaApiKey = secret.Make(envString("ALPACA_API_KEY", ""))
+	config.AlpacaSecret = secret.Make(envString("ALPACA_SECRET", ""))
 	config.AlpacaApiUrl = envString("ALPACA_API_URL",
 		"https://paper-api.alpaca.markets/v2")
 
