@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,6 +65,11 @@ func ReadMigrations(baseDir string) ([]Migration, error) {
 				Name: fileName, Script: string(scriptBytes)})
 		}
 	}
+	// ensure slice is sorted so we apply migrations in the order they were
+	// created.
+	slices.SortFunc(migrations, func(a Migration, b Migration) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return migrations, nil
 }
