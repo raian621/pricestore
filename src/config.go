@@ -16,6 +16,9 @@ type Config struct {
 	DbUser          string
 	DbPassword      string
 	DbMigrationPath string
+	AlpacaApiKey    string
+	AlpacaSecret    string
+	AlpacaApiUrl    string
 }
 
 func LoadConfigFromEnv(config *Config) error {
@@ -27,7 +30,12 @@ func LoadConfigFromEnv(config *Config) error {
 	config.DbName = envString("DB_NAME", "postgres")
 	config.DbUser = envString("DB_USER", "postgres")
 	config.DbPassword = envString("DB_PASSWORD", "postgres")
-	config.DbMigrationPath = envString("DB_MIGRATION_PATH", "./scripts/migrations/")
+	config.DbMigrationPath = envString("DB_MIGRATION_PATH",
+		"./scripts/migrations/")
+	config.AlpacaApiKey = envString("ALPACA_API_KEY", "")
+	config.AlpacaSecret = envString("ALPACA_SECRET", "")
+	config.AlpacaApiUrl = envString("ALPACA_API_URL",
+		"https://paper-api.alpaca.markets/v2")
 
 	return nil
 }
