@@ -7,15 +7,15 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	connStr := CreateDbConnString("postgres", "postgres", "localhost", 5432, "postgres")
 	pool, err := pgxpool.New(context.Background(), connStr)
-	if err != nil {
-		t.Fatalf("failed to connect to test db: %v", err)
-	}
+	require.NoError(t, err, "failed to connect to test db")
 	t.Cleanup(pool.Close)
 	return pool
 }
@@ -34,40 +34,29 @@ func TestReadMigrations(t *testing.T) {
 		"not-a-migration.txt": "ignore me",
 	}
 	for name, content := range files {
-		if err := os.WriteFile(path.Join(dir, name), []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+		err := os.WriteFile(path.Join(dir, name), []byte(content), 0644)
+		require.NoError(t, err)
 	}
 
 	migrations, err := ReadMigrations(dir)
-	if err != nil {
-		t.Fatalf("ReadMigrations failed: %v", err)
-	}
+	require.NoError(t, err)
+	require.Len(t, migrations, 2)
 
-	if len(migrations) != 2 {
-		t.Fatalf("expected 2 migrations, got %d", len(migrations))
-	}
-
-	seen := make(map[string]bool)
 	for _, m := range migrations {
-		seen[m.Name] = true
-		if m.Name == "001-create-foo.sql" && m.Script != "CREATE TABLE foo (id INT);" {
-			t.Errorf("unexpected script for foo: %s", m.Script)
+		switch m.Name {
+		case "001-create-foo.sql":
+			assert.Equal(t, "CREATE TABLE foo (id INT);", m.Script)
+		case "002-create-bar.sql":
+			assert.Equal(t, "CREATE TABLE bar (id INT);", m.Script)
+		default:
+			t.Errorf("unexpected migration name: %s", m.Name)
 		}
-		if m.Name == "002-create-bar.sql" && m.Script != "CREATE TABLE bar (id INT);" {
-			t.Errorf("unexpected script for bar: %s", m.Script)
-		}
-	}
-	if !seen["001-create-foo.sql"] || !seen["002-create-bar.sql"] {
-		t.Error("not all migrations were read")
 	}
 }
 
 func TestReadMigrations_NonExistentDir(t *testing.T) {
 	_, err := ReadMigrations("/nonexistent/path")
-	if err == nil {
-		t.Fatal("expected error for non-existent directory")
-	}
+	assert.Error(t, err)
 }
 
 func TestBootstrapMigrationTable(t *testing.T) {
@@ -80,12 +69,8 @@ func TestBootstrapMigrationTable(t *testing.T) {
 	err := p.QueryRow(context.Background(),
 		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'migrations')",
 	).Scan(&exists)
-	if err != nil {
-		t.Fatalf("failed to check migrations table: %v", err)
-	}
-	if !exists {
-		t.Fatal("migrations table was not created")
-	}
+	require.NoError(t, err)
+	assert.True(t, exists, "migrations table was not created")
 }
 
 func TestApplyMigration(t *testing.T) {
@@ -101,20 +86,14 @@ func TestApplyMigration(t *testing.T) {
 		Script: "CREATE TABLE test_migration_apply (id INT);",
 	}
 
-	if err := m.Apply(p); err != nil {
-		t.Fatalf("Apply failed: %v", err)
-	}
+	require.NoError(t, m.Apply(p))
 
 	var count int
 	err := p.QueryRow(context.Background(),
 		"SELECT COUNT(*) FROM migrations WHERE migration_name = $1", m.Name,
 	).Scan(&count)
-	if err != nil {
-		t.Fatalf("failed to query migrations table: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("expected 1 migration record, got %d", count)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
 }
 
 func TestApplyMigration_SkipsExisting(t *testing.T) {
@@ -136,21 +115,14 @@ func TestApplyMigration_SkipsExisting(t *testing.T) {
 
 	p.Exec(context.Background(), "DROP TABLE IF EXISTS test_migration_skip")
 
-	if err := m.Apply(p); err != nil {
-		t.Fatalf("Apply failed: %v", err)
-	}
+	require.NoError(t, m.Apply(p))
 
-	// table should not exist since migration was skipped
 	var exists bool
 	err := p.QueryRow(context.Background(),
 		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'test_migration_skip')",
 	).Scan(&exists)
-	if err != nil {
-		t.Fatalf("failed to check table existence: %v", err)
-	}
-	if exists {
-		t.Error("table was created even though migration was already applied")
-	}
+	require.NoError(t, err)
+	assert.False(t, exists, "table was created even though migration was already applied")
 }
 
 func TestApplyMigrations(t *testing.T) {
@@ -158,33 +130,24 @@ func TestApplyMigrations(t *testing.T) {
 	cleanupMigrationsTable(t, p)
 
 	dir := t.TempDir()
-	migrationContent := "CREATE TABLE test_apply_all (id INT);"
-	if err := os.WriteFile(
+	require.NoError(t, os.WriteFile(
 		path.Join(dir, "001-test-apply-all.sql"),
-		[]byte(migrationContent),
+		[]byte("CREATE TABLE test_apply_all (id INT);"),
 		0644,
-	); err != nil {
-		t.Fatal(err)
-	}
+	))
 	t.Cleanup(func() {
 		p.Exec(context.Background(), "DROP TABLE IF EXISTS test_apply_all")
 	})
 
-	if err := ApplyMigrations(p, dir, true); err != nil {
-		t.Fatalf("ApplyMigrations failed: %v", err)
-	}
+	require.NoError(t, ApplyMigrations(p, dir, true))
 
 	var count int
 	err := p.QueryRow(context.Background(),
 		"SELECT COUNT(*) FROM migrations WHERE migration_name = $1",
 		"001-test-apply-all.sql",
 	).Scan(&count)
-	if err != nil {
-		t.Fatalf("failed to query migrations: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("expected 1 migration record, got %d", count)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
 }
 
 func TestApplyMigrations_SubsequentRunsAreIdempotent(t *testing.T) {
@@ -192,34 +155,22 @@ func TestApplyMigrations_SubsequentRunsAreIdempotent(t *testing.T) {
 	cleanupMigrationsTable(t, p)
 
 	dir := t.TempDir()
-	migrationContent := "CREATE TABLE test_idempotent (id INT);"
-	if err := os.WriteFile(
+	require.NoError(t, os.WriteFile(
 		path.Join(dir, "001-test-idempotent.sql"),
-		[]byte(migrationContent),
+		[]byte("CREATE TABLE test_idempotent (id INT);"),
 		0644,
-	); err != nil {
-		t.Fatal(err)
-	}
+	))
 	t.Cleanup(func() {
 		p.Exec(context.Background(), "DROP TABLE IF EXISTS test_idempotent")
 	})
 
-	if err := ApplyMigrations(p, dir, true); err != nil {
-		t.Fatalf("first ApplyMigrations failed: %v", err)
-	}
-
-	if err := ApplyMigrations(p, dir, false); err != nil {
-		t.Fatalf("second ApplyMigrations failed: %v", err)
-	}
+	require.NoError(t, ApplyMigrations(p, dir, true))
+	require.NoError(t, ApplyMigrations(p, dir, false))
 
 	var count int
 	err := p.QueryRow(context.Background(),
 		"SELECT COUNT(*) FROM migrations",
 	).Scan(&count)
-	if err != nil {
-		t.Fatalf("failed to query migrations: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("expected 1 migration record after second run, got %d", count)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 1, count, "expected 1 migration record after second run")
 }
