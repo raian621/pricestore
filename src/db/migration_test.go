@@ -29,8 +29,8 @@ func TestReadMigrations(t *testing.T) {
 	dir := t.TempDir()
 
 	files := map[string]string{
-		"001-create-foo.sql": "CREATE TABLE foo (id INT);",
-		"002-create-bar.sql": "CREATE TABLE bar (id INT);",
+		"001-create-foo.sql":  "CREATE TABLE foo (id INT);",
+		"002-create-bar.sql":  "CREATE TABLE bar (id INT);",
 		"not-a-migration.txt": "ignore me",
 	}
 	for name, content := range files {
