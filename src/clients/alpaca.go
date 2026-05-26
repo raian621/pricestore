@@ -63,7 +63,9 @@ type getHistoricalBarsResponse struct {
 }
 
 // See https://docs.alpaca.markets/us/reference/stockbars
-func (c *AlpacaClient) GetCandlesticks(name string, startUsec, endUsec int64) ([]shared_models.Candlestick, error) {
+func (c *AlpacaClient) GetCandlesticks(
+	name string, startUsec, endUsec int64,
+) ([]shared_models.Candlestick, error) {
 	req := getHistoricalBarsRequest{
 		Symbols:   name,
 		Timeframe: "1D",
@@ -132,10 +134,12 @@ func (c *AlpacaClient) getCandlesticks(
 		candlestick.Volume = float64(bar.Volume)
 	}
 
-	return []shared_models.Candlestick{}, barResponse.NextPageToken, nil
+	return candlesticks, barResponse.NextPageToken, nil
 }
 
-func (c *AlpacaClient) sendRequest(req *http.Request, retries int) (res *http.Response, err error) {
+func (c *AlpacaClient) sendRequest(
+	req *http.Request, retries int,
+) (res *http.Response, err error) {
 	for i := 0; i < retries; retries++ {
 		res, err = c.client.Do(req)
 		if err != nil || res.StatusCode != http.StatusOK {
@@ -147,8 +151,10 @@ func (c *AlpacaClient) sendRequest(req *http.Request, retries int) (res *http.Re
 	return nil, err
 }
 
-func (c *AlpacaClient) newRequest(method, urlPath string, bodyReader io.Reader) (*http.Request, error) {
-	methodUrl, err := url.JoinPath(c.baseUrl, "/stocks/bars")
+func (c *AlpacaClient) newRequest(
+	method, urlPath string, bodyReader io.Reader,
+) (*http.Request, error) {
+	methodUrl, err := url.JoinPath(c.baseUrl, urlPath)
 	if err != nil {
 		return nil, err
 	}
