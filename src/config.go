@@ -36,7 +36,7 @@ func LoadConfigFromEnv(config *Config) error {
 	config.AlpacaApiKey = secret.Make(envString("ALPACA_API_KEY", ""))
 	config.AlpacaSecret = secret.Make(envString("ALPACA_SECRET", ""))
 	config.AlpacaApiUrl = envString("ALPACA_API_URL",
-		"https://paper-api.alpaca.markets/v2")
+		"https://data.alpaca.markets/v2")
 
 	return nil
 }
